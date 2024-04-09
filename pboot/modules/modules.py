@@ -97,24 +97,27 @@ class MHA(nn.Module):
         self.model_dim = config.model_dim
         self.nheads = config.nheads
         self.attention_dropout = config.attention_dropout
+        self.use_bias = config.use_linear_bias
         self.dtype = config.dtype
         self.device = config.device
 
         self.apply_rope_fn = apply_rotary_position_embeddings
-        self.qkv_proj = nn.Linear(self.model_dim, 3 * self.model_dim, dtype=self.dtype, device=self.device)
-        self.out_proj = nn.Linear(self.model_dim, self.model_dim, dtype=self.dtype, device=self.device)
+        self.q_proj = nn.Linear(self.model_dim, self.model_dim, bias=self.use_bias, dtype=self.dtype, device=self.device)
+        self.k_proj = nn.Linear(self.model_dim, self.model_dim, bias=self.use_bias, dtype=self.dtype, device=self.device)
+        self.v_proj = nn.Linear(self.model_dim, self.model_dim, bias=self.use_bias, dtype=self.dtype, device=self.device)
+        self.out_proj = nn.Linear(self.model_dim, self.model_dim, bias=self.use_bias, dtype=self.dtype, device=self.device)
 
     def forward(self, inputs: Tensor, cos: Tensor, sin: Tensor, attention_mask: Optional[Tensor] = None):
         B, S, H = inputs.shape
 
-        q, k, v = torch.chunk(self.qkv_proj(inputs), 3, dim=-1)
+        q = self.q_proj(inputs).reshape(B, S, self.nheads, H // self.nheads).permute(0, 2, 1, 3)
+        k = self.k_proj(inputs).reshape(B, S, self.nheads, H // self.nheads).permute(0, 2, 1, 3)
+        v = self.v_proj(inputs).reshape(B, S, self.nheads, H // self.nheads).permute(0, 2, 1, 3)
 
         assert H % self.nheads == 0
 
-        q = q.reshape(B, S, self.nheads, H // self.nheads)
-        k = k.reshape(B, S, self.nheads, H // self.nheads)
-        v = v.reshape(B, S, self.nheads, H // self.nheads)
-
+        cos = cos.permute(0, 2, 1, 3)
+        sin = sin.permute(0, 2, 1, 3)
         q, k = self.apply_rope_fn(q, k, cos, sin)
 
         attn_out = torch.nn.functional.scaled_dot_product_attention(
@@ -125,7 +128,7 @@ class MHA(nn.Module):
             scale=None,
         )
 
-        attn_out = attn_out.reshape(B, S, H)
+        attn_out = attn_out.permute(0, 2, 1, 3).reshape(B, S, H)
 
         return self.out_proj(attn_out)
 

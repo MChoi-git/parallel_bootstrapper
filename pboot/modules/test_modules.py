@@ -28,6 +28,7 @@ def config():
     config.attention_dropout = 0.
     config.mlp_expansion_scale = 4
     config.nlayers = 2
+    config.use_linear_bias = True
     return config
 
 
@@ -47,6 +48,7 @@ def convergence_config():
     config.lr = 1e-2
     config.num_steps = 100
     config.loss_threshold = 1e-3
+    config.use_linear_bias = True
     return config
 
 

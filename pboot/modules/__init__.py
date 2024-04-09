@@ -16,4 +16,5 @@ from .parallel_modules import (
     ColumnParallelLinear,
     RowParallelLinear,
     ParallelMLP,
+    ParallelMHA
 )

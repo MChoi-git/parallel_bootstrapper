@@ -48,7 +48,7 @@ def _add_model_args(parser):
     group.add_argument("--model-dim", type=int, default=1024)
     group.add_argument("--nheads", type=int, default=16)
     group.add_argument("--mlp-expansion-scale", type=int, default=4)
-    group.add_argument("--use-bias", action="store_true")
+    group.add_argument("--use-linear-bias", action="store_true")
     group.add_argument("--attention-dropout", type=float, default=0.)
     group.add_argument("--mha-dropout", type=float, default=0.)
     group.add_argument("--mlp-dropout", type=float, default=0.)
