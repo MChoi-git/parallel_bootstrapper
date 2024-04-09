@@ -72,7 +72,7 @@ def test_all_reduce(device):
 
     tensor = torch.ones(1) * rank
 
-    res = all_reduce(tensor, group=None)
+    res = all_reduce(tensor, group=None, op="avg")
     compare = torch.arange(world_size).float().mean()
     assert res.item() == compare, f"{res} != {compare}"
 
